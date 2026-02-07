@@ -72,11 +72,13 @@
         "description": "Fine-tune integration behavior for your needs.",
         "data": {
           "scan_interval": "Update interval",
+          "refresh_config_interval": "Config refresh interval",
           "filter_probable": "Hide probable outages for planned days",
           "status_all_day_events": "Show status all-day events"
         },
         "data_description": {
           "scan_interval": "The number of minutes between updates",
+          "refresh_config_interval": "The number of minutes between configuration refreshes (for address-based entries)",
           "filter_probable": "Hides probable outages in the calendar for days when a planned schedule is available",
           "status_all_day_events": "Adds all-day calendar entries describing today's and tomorrow's outage status"
         }
@@ -108,11 +110,13 @@
         "description": "Fine-tune integration behavior for your needs.",
         "data": {
           "scan_interval": "Update interval",
+          "refresh_config_interval": "Config refresh interval",
           "filter_probable": "Hide probable outages when planned schedule is available",
           "status_all_day_events": "Show status all-day events"
         },
         "data_description": {
           "scan_interval": "The number of minutes between updates",
+          "refresh_config_interval": "The number of minutes between configuration refreshes (for address-based entries)",
           "filter_probable": "Hides probable outages when planned schedule exists for a day",
           "status_all_day_events": "Adds all-day calendar entries describing today's and tomorrow's status"
         }

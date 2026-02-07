@@ -198,6 +198,115 @@ class BaseYasnoApi(ABC):
 
         return f"{group}.{subgroup}"
 
+    async def refetch_address_config(
+        self,
+        region_name: str,
+        provider_name: str,
+        street_name: str,
+        house_name: str,
+    ) -> dict[str, int | str] | None:
+        """Re-fetch address configuration by names.
+
+        Returns a dict with region_id, provider_id, street_id, house_id, and group.
+        """
+        # Fetch regions if not already fetched
+        if not self.regions_data:
+            await self.fetch_regions()
+
+        # Get region and provider IDs
+        region_data = self.get_region_by_name(region_name)
+        provider_data = self.get_provider_by_name(region_name, provider_name)
+
+        if not region_data or not provider_data:
+            LOGGER.warning(
+                "Failed to resolve region/provider: %s/%s",
+                region_name,
+                provider_name,
+            )
+            return None
+
+        region_id = region_data["id"]
+        provider_id = provider_data["id"]
+
+        # Search for the street by name
+        streets = await self.fetch_streets(
+            region_id=region_id,
+            provider_id=provider_id,
+            query=street_name,
+        )
+
+        # Find exact match or best match
+        street_data = None
+        for street in streets:
+            if street["value"] == street_name:
+                street_data = street
+                break
+
+        if not street_data and streets:
+            # If no exact match, take the first result
+            street_data = streets[0]
+            LOGGER.info(
+                "No exact match for street '%s', using '%s'",
+                street_name,
+                street_data["value"],
+            )
+
+        if not street_data:
+            LOGGER.warning("Failed to find street: %s", street_name)
+            return None
+
+        street_id = street_data["id"]
+
+        # Search for the house by name
+        houses = await self.fetch_houses(
+            region_id=region_id,
+            provider_id=provider_id,
+            street_id=street_id,
+            query=house_name,
+        )
+
+        # Find exact match or best match
+        house_data = None
+        for house in houses:
+            if house["value"] == house_name:
+                house_data = house
+                break
+
+        if not house_data and houses:
+            # If no exact match, take the first result
+            house_data = houses[0]
+            LOGGER.info(
+                "No exact match for house '%s', using '%s'",
+                house_name,
+                house_data["value"],
+            )
+
+        if not house_data:
+            LOGGER.warning("Failed to find house: %s", house_name)
+            return None
+
+        house_id = house_data["id"]
+
+        # Fetch group by address
+        group = await self.fetch_group_by_address(
+            region_id=region_id,
+            provider_id=provider_id,
+            street_id=street_id,
+            house_id=house_id,
+        )
+
+        if not group:
+            LOGGER.warning("Failed to fetch group for address")
+            return None
+
+        return {
+            "region_id": region_id,
+            "provider_id": provider_id,
+            "street_id": street_id,
+            "house_id": house_id,
+            "group": group,
+        }
+
     def get_next_event(
         self,
         at: datetime.datetime,

@@ -22,9 +22,12 @@ from .const import (
     CONF_ADDRESS_NAME,
     CONF_FILTER_PROBABLE,
     CONF_GROUP,
+    CONF_HOUSE_NAME,
     CONF_PROVIDER,
     CONF_REGION,
+    CONF_REFRESH_CONFIG_INTERVAL,
     CONF_STATUS_ALL_DAY_EVENTS,
+    CONF_STREET_NAME,
     DOMAIN,
     PLANNED_OUTAGE_LOOKAHEAD,
     PLANNED_OUTAGE_TEXT_FALLBACK,
@@ -136,6 +139,8 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
             CONF_GROUP, config_entry.data.get(CONF_GROUP)
         )
         self.address_name = config_entry.data.get(CONF_ADDRESS_NAME)
+        self.street_name = config_entry.data.get(CONF_STREET_NAME)
+        self.house_name = config_entry.data.get(CONF_HOUSE_NAME)
         self.filter_probable = config_entry.options.get(
             CONF_FILTER_PROBABLE,
             config_entry.data.get(CONF_FILTER_PROBABLE, True),
@@ -144,6 +149,14 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
             CONF_STATUS_ALL_DAY_EVENTS,
             config_entry.data.get(CONF_STATUS_ALL_DAY_EVENTS, True),
         )
+
+        # Config refresh settings - default to 10 minutes
+        self.refresh_config_interval = config_entry.options.get(
+            CONF_REFRESH_CONFIG_INTERVAL,
+            config_entry.data.get(CONF_REFRESH_CONFIG_INTERVAL, 10),
+        )
+        self._last_config_refresh: datetime.datetime | None = None
+        self._config_needs_refresh = False
 
         if not self.region:
             region_required_msg = (
@@ -181,6 +194,9 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         """Fetch data from new Yasno API."""
         await self.async_fetch_translations()
 
+        # Check if we need to refresh configuration (for address-based entries)
+        await self._async_refresh_config_if_needed()
+
         # Cache current data before fetching (for fallback on API failure)
         planned_cache = self.api.planned.planned_outages_data
         probable_cache = self.api.probable.probable_outages_data
@@ -202,6 +218,77 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
                 "Failed to fetch probable outages, using cached data", exc_info=True
             )
             self.api.probable.probable_outages_data = probable_cache
+
+    async def _async_refresh_config_if_needed(self) -> None:
+        """Refresh configuration if needed (for address-based entries)."""
+        # Only refresh if we have address info
+        if not self.street_name or not self.house_name:
+            return
+
+        now = dt_utils.now()
+
+        # Check if it's time to refresh
+        if self._last_config_refresh:
+            time_since_refresh = (now - self._last_config_refresh).total_seconds() / 60
+            if time_since_refresh < self.refresh_config_interval:
+                return
+
+        LOGGER.info(
+            "Refreshing configuration for address: %s %s",
+            self.street_name,
+            self.house_name,
+        )
+
+        try:
+            config_data = await self.api.refetch_address_config(
+                region_name=self.region,
+                provider_name=self.provider,
+                street_name=self.street_name,
+                house_name=self.house_name,
+            )
+
+            if config_data:
+                # Update API with new configuration
+                region_id = config_data["region_id"]
+                provider_id = config_data["provider_id"]
+                group = config_data["group"]
+
+                if (
+                    self.api.planned.region_id != region_id
+                    or self.api.planned.provider_id != provider_id
+                    or self.api.planned.group != group
+                ):
+                    LOGGER.info(
+                        "Configuration changed: region_id=%s, provider_id=%s, "
+                        "street_id=%s, house_id=%s, group=%s",
+                        region_id,
+                        provider_id,
+                        config_data["street_id"],
+                        config_data["house_id"],
+                        group,
+                    )
+
+                    # Update both planned and probable APIs
+                    self.api.planned.region_id = region_id
+                    self.api.planned.provider_id = provider_id
+                    self.api.planned.group = group
+
+                    self.api.probable.region_id = region_id
+                    self.api.probable.provider_id = provider_id
+                    self.api.probable.group = group
+
+                    # Update coordinator's group
+                    self.group = group
+
+                    self._config_needs_refresh = True
+                else:
+                    LOGGER.debug("Configuration unchanged")
+
+                self._last_config_refresh = now
+            else:
+                LOGGER.warning("Failed to refresh configuration")
+        except Exception:  # noqa: BLE001
+            LOGGER.warning("Error refreshing configuration", exc_info=True)
 
     def _event_to_state(self, event: OutageEvent | None) -> str:
         """Map outage event to electricity state."""

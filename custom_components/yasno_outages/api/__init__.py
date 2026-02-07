@@ -104,6 +104,21 @@ class YasnoApi:
             house_id,
         )
 
+    async def refetch_address_config(
+        self,
+        region_name: str,
+        provider_name: str,
+        street_name: str,
+        house_name: str,
+    ) -> dict[str, int | str] | None:
+        """Re-fetch address configuration by names."""
+        return await self._planned.refetch_address_config(
+            region_name,
+            provider_name,
+            street_name,
+            house_name,
+        )
+
 
 __all__ = [
     "OutageEvent",

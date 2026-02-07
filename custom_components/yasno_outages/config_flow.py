@@ -27,10 +27,13 @@ from .const import (
     CONF_FILTER_PROBABLE,
     CONF_GROUP,
     CONF_HOUSE_ID,
+    CONF_HOUSE_NAME,
     CONF_PROVIDER,
+    CONF_REFRESH_CONFIG_INTERVAL,
     CONF_REGION,
     CONF_STATUS_ALL_DAY_EVENTS,
     CONF_STREET_ID,
+    CONF_STREET_NAME,
     DOMAIN,
     YASNO_GROUP_URL,
 )
@@ -163,6 +166,22 @@ def build_preferences_schema(
                     config_entry,
                     CONF_SCAN_INTERVAL,
                     default=15,
+                ),
+            ): NumberSelector(
+                NumberSelectorConfig(
+                    min=1,
+                    max=60,
+                    step=1,
+                    mode=NumberSelectorMode.BOX,
+                    unit_of_measurement="min",
+                )
+            ),
+            vol.Optional(
+                CONF_REFRESH_CONFIG_INTERVAL,
+                default=get_config_value(
+                    config_entry,
+                    CONF_REFRESH_CONFIG_INTERVAL,
+                    default=10,
                 ),
             ): NumberSelector(
                 NumberSelectorConfig(
@@ -489,6 +508,8 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
                     CONF_STREET_ID: self.data[CONF_STREET_ID],
                     CONF_HOUSE_ID: self.data[CONF_HOUSE_ID],
                     CONF_ADDRESS_NAME: f"{self._street_name} {self._house_name}",
+                    CONF_STREET_NAME: self._street_name,
+                    CONF_HOUSE_NAME: self._house_name,
                 }
 
             data.update(
@@ -497,6 +518,12 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
                     CONF_STATUS_ALL_DAY_EVENTS: self.data[CONF_STATUS_ALL_DAY_EVENTS],
                 }
             )
+
+            # Add optional settings if present
+            if CONF_SCAN_INTERVAL in self.data:
+                data[CONF_SCAN_INTERVAL] = self.data[CONF_SCAN_INTERVAL]
+            if CONF_REFRESH_CONFIG_INTERVAL in self.data:
+                data[CONF_REFRESH_CONFIG_INTERVAL] = self.data[CONF_REFRESH_CONFIG_INTERVAL]
 
             return self.async_create_entry(title=title, data=data)
 

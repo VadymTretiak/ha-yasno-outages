@@ -12,10 +12,12 @@ from .api import YasnoApi
 from .const import (
     CONF_GROUP,
     CONF_HOUSE_ID,
+    CONF_HOUSE_NAME,
     CONF_PROVIDER,
     CONF_REGION,
     CONF_SERVICE,
     CONF_STREET_ID,
+    CONF_STREET_NAME,
 )
 from .coordinator import YasnoOutagesCoordinator
 from .data import YasnoOutagesData

@@ -72,11 +72,13 @@
         "description": "Stem integratiegedrag af op je situatie.",
         "data": {
           "scan_interval": "Updatefrequentie",
+          "refresh_config_interval": "Configuratie-update interval",
           "filter_probable": "Verberg waarschijnlijke onderbrekingen op geplande dagen",
           "status_all_day_events": "Toon status-evenementen voor de hele dag"
         },
         "data_description": {
           "scan_interval": "Aantal minuten tussen updates",
+          "refresh_config_interval": "Aantal minuten tussen configuratie-updates (voor adres-gebaseerde instellingen)",
           "filter_probable": "Verbergt waarschijnlijke onderbrekingen in de kalender op dagen waarop een gepland schema beschikbaar is",
           "status_all_day_events": "Voegt kalenderitems voor de hele dag toe die de status van de onderbrekingen van vandaag en morgen beschrijven"
         }
@@ -108,12 +110,14 @@
         "description": "Stem integratiegedrag af op je situatie.",
         "data": {
           "scan_interval": "Updatefrequentie",
+          "refresh_config_interval": "Configuratie-update interval",
           "filter_probable": "Verberg waarschijnlijke onderbrekingen wanneer een gepland schema beschikbaar is",
           "status_all_day_events": "Toon status-evenementen voor de hele dag"
         },
         "data_description": {
           "scan_interval": "Aantal minuten tussen updates",
-          "filter_probable": "Verbergt waarschijnlijke onderbrekingen als er een gepland schema is",
+          "refresh_config_interval": "Aantal minuten tussen configuratie-updates (voor adres-gebaseerde instellingen)",
+          "filter_probable": "Verbergt waarschijnlijke onderbrekingen wanneer er een gepland schema bestaat voor een dag",
           "status_all_day_events": "Voegt kalenderitems voor de hele dag toe die de status van vandaag en morgen beschrijven"
         }
       }
